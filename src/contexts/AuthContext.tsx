@@ -34,15 +34,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             finalData = userDoc.data();
             finalRole = finalData.role;
 
-            const adminEmail = 'newroskoto@gmail.com';
-            if (currentUser.email === adminEmail && finalRole !== 'admin') {
+            const adminEmails = ['newroskoto@gmail.com', 'mkamangahas@tip.edu.ph'];
+            if (adminEmails.includes(currentUser.email!) && finalRole !== 'admin') {
               finalRole = 'admin';
               await updateDoc(userDocRef, { role: 'admin' });
               finalData.role = 'admin';
             }
           } else {
-            const adminEmail = 'newroskoto@gmail.com'; 
-            if (currentUser.email === adminEmail) {
+            const adminEmails = ['newroskoto@gmail.com', 'mkamangahas@tip.edu.ph'];
+            if (adminEmails.includes(currentUser.email!)) {
               finalRole = 'admin';
             } else {
               finalRole = 'user';

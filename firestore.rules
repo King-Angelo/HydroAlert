@@ -33,21 +33,30 @@ service cloud.firestore {
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow list: if isAdmin();
       allow create: if isSignedIn() && userId == request.auth.uid && isValidUser(getIncoming()) &&
-                       getIncoming().role == (getIncoming().email == 'newroskoto@gmail.com' ? 'admin' : 'user') &&
+                       getIncoming().role == (getIncoming().email in ['newroskoto@gmail.com', 'mkamangahas@tip.edu.ph'] ? 'admin' : 'user') &&
                        getIncoming().email == request.auth.token.email;
-      allow update: if isSignedIn() && request.auth.uid == userId && 
+      allow update: if isSignedIn() && request.auth.uid == userId && (
                     getIncoming().diff(getExisting()).affectedKeys().hasOnly(['name', 'phone']) ||
+                    (getIncoming().diff(getExisting()).affectedKeys().hasOnly(['role']) &&
+                     getExisting().email in ['newroskoto@gmail.com', 'mkamangahas@tip.edu.ph'] &&
+                     getIncoming().role == 'admin')
+                  ) ||
                     (isAdmin() && getIncoming().diff(getExisting()).affectedKeys().hasOnly(['role']));
+    }
+
+    function isValidSystemStateField(val) {
+      return (val is string && val.matches('^[0-9]+(\\.[0-9]+)?$')) ||
+             val is int || val is float;
     }
 
     function isValidSystemState(data) {
       return data.keys().hasAll(['waterLevel', 'normalThreshold', 'warningThreshold', 'dangerThreshold', 'maxHeight', 'updatedAt']) &&
              data.keys().size() >= 6 && data.keys().size() <= 9 &&
-             data.waterLevel is string && data.waterLevel.matches('^[0-9]+(\\.[0-9]+)?$') &&
-             data.normalThreshold is string && data.normalThreshold.matches('^[0-9]+(\\.[0-9]+)?$') &&
-             data.warningThreshold is string && data.warningThreshold.matches('^[0-9]+(\\.[0-9]+)?$') &&
-             data.dangerThreshold is string && data.dangerThreshold.matches('^[0-9]+(\\.[0-9]+)?$') &&
-             data.maxHeight is string && data.maxHeight.matches('^[0-9]+(\\.[0-9]+)?$') &&
+             isValidSystemStateField(data.waterLevel) &&
+             isValidSystemStateField(data.normalThreshold) &&
+             isValidSystemStateField(data.warningThreshold) &&
+             isValidSystemStateField(data.dangerThreshold) &&
+             isValidSystemStateField(data.maxHeight) &&
              (!('warningMessage' in data) || data.warningMessage is string) &&
              (!('dangerMessage' in data) || data.dangerMessage is string) &&
              (!('normalMessage' in data) || data.normalMessage is string) &&

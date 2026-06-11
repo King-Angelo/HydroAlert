@@ -68,6 +68,7 @@ export const DeviceSettings: React.FC = () => {
     setSaveStatus('saving');
     try {
       await updateDoc(doc(db, 'systemState', 'current'), {
+        waterLevel: Number(systemState?.waterLevel ?? 0).toFixed(2),
         normalThreshold: Number(formData.normalThreshold).toFixed(2),
         warningThreshold: Number(formData.warningThreshold).toFixed(2),
         dangerThreshold: Number(formData.dangerThreshold).toFixed(2),
