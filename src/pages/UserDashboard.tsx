@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, signOut, handleFirestoreError, OperationType, auth } from '../lib/firebase';
+import { formatMeters, meterValue } from '../lib/systemState';
 import { doc, onSnapshot, collection, query, where, orderBy, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { updatePassword } from 'firebase/auth';
 import { WaveBackground } from '../components/WaveBackground';
@@ -185,7 +186,7 @@ export const UserDashboard: React.FC = () => {
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="min-h-screen text-slate-800 flex flex-col pt-safe px-4 overflow-hidden relative pb-24 md:pb-8"
         >
-          <WaveBackground level={systemState ? (systemState.waterLevel / systemState.dangerThreshold) * 80 : 10} state={floodState} />
+          <WaveBackground level={systemState ? (meterValue(systemState.waterLevel) / meterValue(systemState.dangerThreshold)) * 80 : 10} state={floodState} />
           
           <header className="flex justify-between items-center py-6 relative z-10">
             <div className="flex items-center gap-3">
@@ -227,7 +228,7 @@ export const UserDashboard: React.FC = () => {
                     Current Water Level
                   </h2>
                   <div className="text-7xl font-black text-blue-900 flex items-baseline tracking-tighter drop-shadow-sm">
-                    {systemState ? systemState.waterLevel.toFixed(1) : '--'}
+                    {systemState ? formatMeters(systemState.waterLevel, 2) : '--'}
                     <span className="text-2xl text-blue-400 font-bold ml-1 opacity-50">m</span>
                   </div>
                   {systemState && (

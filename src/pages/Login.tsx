@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { signUpWithEmail, loginWithEmail, signInWithGoogle, resetPassword, db, handleFirestoreError, OperationType, signOut } from '../lib/firebase';
+import { meterValue } from '../lib/systemState';
 import { Droplet, ShieldAlert, Mail, Eye, EyeOff, User, Phone, LogOut } from 'lucide-react';
 import { WaveBackground } from '../components/WaveBackground';
 import { doc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
@@ -32,12 +33,12 @@ export const Login: React.FC = () => {
   }, []);
 
   const floodState = systemState 
-    ? (systemState.waterLevel >= systemState.dangerThreshold ? 'danger' : 
-       systemState.waterLevel >= systemState.warningThreshold ? 'warning' : 'normal')
+    ? (meterValue(systemState.waterLevel) >= meterValue(systemState.dangerThreshold) ? 'danger' : 
+       meterValue(systemState.waterLevel) >= meterValue(systemState.warningThreshold) ? 'warning' : 'normal')
     : 'normal';
 
   const waveLevel = systemState 
-    ? (systemState.waterLevel / systemState.dangerThreshold) * 80 
+    ? (meterValue(systemState.waterLevel) / meterValue(systemState.dangerThreshold)) * 80 
     : 30;
 
   useEffect(() => {

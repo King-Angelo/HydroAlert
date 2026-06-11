@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, signOut, handleFirestoreError, OperationType } from '../lib/firebase';
+import { meterValue } from '../lib/systemState';
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { WaveBackground } from '../components/WaveBackground';
@@ -135,7 +136,7 @@ export const DeviceSettings: React.FC = () => {
           exit={{ opacity: 0 }}
           className="min-h-screen bg-slate-50 relative pb-20"
         >
-          <WaveBackground level={systemState ? (systemState.waterLevel / systemState.dangerThreshold) * 80 : 10} state={floodState} />
+          <WaveBackground level={systemState ? (meterValue(systemState.waterLevel) / meterValue(systemState.dangerThreshold)) * 80 : 10} state={floodState} />
           
           <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
             <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">

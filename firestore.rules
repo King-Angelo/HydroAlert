@@ -37,6 +37,7 @@ service cloud.firestore {
                        getIncoming().email == request.auth.token.email;
       allow update: if isSignedIn() && request.auth.uid == userId && (
                     getIncoming().diff(getExisting()).affectedKeys().hasOnly(['name', 'phone']) ||
+                    getIncoming().diff(getExisting()).affectedKeys().hasOnly(['name', 'phone', 'updatedAt']) ||
                     (getIncoming().diff(getExisting()).affectedKeys().hasOnly(['role']) &&
                      getExisting().email in ['newroskoto@gmail.com', 'mkamangahas@tip.edu.ph'] &&
                      getIncoming().role == 'admin')

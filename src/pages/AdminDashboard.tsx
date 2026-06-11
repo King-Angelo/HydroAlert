@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, signOut, handleFirestoreError, OperationType } from '../lib/firebase';
+import { formatMeters, meterValue } from '../lib/systemState';
 import { doc, onSnapshot, collection, query, where, orderBy, setDoc, updateDoc, serverTimestamp, getDocs, addDoc } from 'firebase/firestore';
 import { WaveBackground } from '../components/WaveBackground';
 import { LogOut, Activity, Settings2, AlertCircle, Navigation, CheckCircle, ShieldAlert, MapPin, Users, UserCog, Map as MapIcon, Home, Bell, Settings } from 'lucide-react';
@@ -33,10 +34,11 @@ export const AdminDashboard: React.FC = () => {
          const snap = await getDocs(query(collection(db, 'systemState')));
          if (snap.empty) {
             await setDoc(doc(db, 'systemState', 'current'), {
-              waterLevel: 1.0,
-              normalThreshold: 0.5,
-              warningThreshold: 1.5,
-              dangerThreshold: 3.0,
+              waterLevel: '0.00',
+              normalThreshold: '0.50',
+              warningThreshold: '1.50',
+              dangerThreshold: '3.00',
+              maxHeight: '4.00',
               updatedAt: serverTimestamp()
             });
          }
@@ -180,9 +182,9 @@ export const AdminDashboard: React.FC = () => {
 
   let floodState: 'normal' | 'warning' | 'danger' = 'normal';
   if (systemState) {
-    if (systemState.waterLevel >= systemState.dangerThreshold) {
+    if (meterValue(systemState.waterLevel) >= meterValue(systemState.dangerThreshold)) {
       floodState = 'danger';
-    } else if (systemState.waterLevel >= systemState.warningThreshold) {
+    } else if (meterValue(systemState.waterLevel) >= meterValue(systemState.warningThreshold)) {
       floodState = 'warning';
     }
   }
@@ -211,7 +213,7 @@ export const AdminDashboard: React.FC = () => {
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="min-h-screen bg-transparent text-slate-800 pb-24 md:pb-12 relative"
         >
-           <WaveBackground level={systemState ? (systemState.waterLevel / systemState.dangerThreshold) * 80 : 10} state={floodState} />
+           <WaveBackground level={systemState ? (meterValue(systemState.waterLevel) / meterValue(systemState.dangerThreshold)) * 80 : 10} state={floodState} />
        
        <header className="bg-white/85 backdrop-blur-md border border-white/50 sticky top-0 z-50 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
@@ -284,7 +286,7 @@ export const AdminDashboard: React.FC = () => {
 
                <div className="flex flex-col items-center py-6">
                  <div className="text-7xl font-black text-blue-900 mb-6 tracking-tighter drop-shadow-sm">
-                    {systemState?.waterLevel.toFixed(1)}<span className="text-2xl text-slate-300 font-bold ml-1">m</span>
+                    {formatMeters(systemState?.waterLevel, 2)}<span className="text-2xl text-slate-300 font-bold ml-1">m</span>
                  </div>
                  
                  <div className={clsx(
