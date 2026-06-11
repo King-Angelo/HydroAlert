@@ -68,9 +68,9 @@ export const DeviceSettings: React.FC = () => {
     setSaveStatus('saving');
     try {
       await updateDoc(doc(db, 'systemState', 'current'), {
-        normalThreshold: Number(formData.normalThreshold).toFixed(1),
-        warningThreshold: Number(formData.warningThreshold).toFixed(1),
-        dangerThreshold: Number(formData.dangerThreshold).toFixed(1),
+        normalThreshold: Number(formData.normalThreshold).toFixed(2),
+        warningThreshold: Number(formData.warningThreshold).toFixed(2),
+        dangerThreshold: Number(formData.dangerThreshold).toFixed(2),
         maxHeight: Number(formData.maxHeight).toFixed(2),
         normalMessage: formData.normalMessage,
         warningMessage: formData.warningMessage,
@@ -208,10 +208,10 @@ export const DeviceSettings: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-end">
                     <label className="text-green-600 font-black uppercase text-[10px] tracking-widest">Normal Range</label>
-                    <span className="text-green-600 font-mono font-bold text-lg">{formData.normalThreshold.toFixed(1)}m</span>
+                    <span className="text-green-600 font-mono font-bold text-lg">{formData.normalThreshold.toFixed(2)}m</span>
                   </div>
                   <input 
-                    type="range" min="0" max={formData.maxHeight} step="0.1" 
+                    type="range" min="0" max={formData.maxHeight} step="0.01" 
                     value={formData.normalThreshold} 
                     onChange={e => {
                       const val = parseFloat(e.target.value);
@@ -230,10 +230,10 @@ export const DeviceSettings: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-end">
                     <label className="text-orange-500 font-black uppercase text-[10px] tracking-widest">Warning Point</label>
-                    <span className="text-orange-500 font-mono font-bold text-lg">{formData.warningThreshold.toFixed(1)}m</span>
+                    <span className="text-orange-500 font-mono font-bold text-lg">{formData.warningThreshold.toFixed(2)}m</span>
                   </div>
                   <input 
-                    type="range" min={Math.min(formData.normalThreshold + 0.1, formData.maxHeight - 0.1).toFixed(1)} max={formData.maxHeight} step="0.1" 
+                    type="range" min={Math.min(formData.normalThreshold + 0.1, formData.maxHeight - 0.1).toFixed(1)} max={formData.maxHeight} step="0.01" 
                     value={formData.warningThreshold} 
                     onChange={e => {
                       const val = parseFloat(e.target.value);
@@ -251,10 +251,10 @@ export const DeviceSettings: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-end">
                     <label className="text-red-600 font-black uppercase text-[10px] tracking-widest">Danger Point</label>
-                    <span className="text-red-600 font-mono font-bold text-lg">{formData.dangerThreshold.toFixed(1)}m</span>
+                    <span className="text-red-600 font-mono font-bold text-lg">{formData.dangerThreshold.toFixed(2)}m</span>
                   </div>
                   <input 
-                    type="range" min={Math.min(formData.warningThreshold + 0.1, formData.maxHeight).toFixed(1)} max={formData.maxHeight} step="0.1" 
+                    type="range" min={Math.min(formData.warningThreshold + 0.1, formData.maxHeight).toFixed(1)} max={formData.maxHeight} step="0.01" 
                     value={formData.dangerThreshold} 
                     onChange={e => setFormData(prev => ({ ...prev, dangerThreshold: parseFloat(e.target.value) }))} 
                     className="w-full h-3 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-red-600" 
