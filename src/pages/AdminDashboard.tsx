@@ -46,47 +46,50 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const renderAuditTrail = () => (
-    <div className="bg-white/90 backdrop-blur-md border border-white/50 rounded-[1.5rem] p-6 shadow-xl flex flex-col">
-      <h2 className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-4 flex items-center gap-2">
-        <ScrollText className="w-4 h-4" /> Audit Trail
+    <div className="bg-white/90 backdrop-blur-md border border-white/50 rounded-[1.5rem] p-6 shadow-xl flex flex-col w-full">
+      <h2 className="text-xl font-bold text-blue-900 mb-1 flex items-center gap-2">
+        <ScrollText className="w-6 h-6 text-slate-500" /> Audit Trail
       </h2>
-      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4">
+      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-6">
         Latest 50 system events
       </p>
-      <div className="h-[450px] overflow-y-auto flex flex-col gap-3 pr-1">
-        {auditLogs.length === 0 && (
-          <div className="flex-1 flex items-center justify-center bg-slate-50 border border-dashed border-slate-200 rounded-xl p-6">
-            <p className="text-slate-400 text-xs font-medium italic text-center">No audit events recorded yet.</p>
+      <div className="max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
+        {auditLogs.length === 0 ? (
+          <div className="flex items-center justify-center bg-slate-50 border border-dashed border-slate-200 rounded-xl p-12">
+            <p className="text-slate-400 text-sm font-medium italic text-center">No audit events recorded yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {auditLogs.map(log => {
+              const style = getAuditStyle(log.eventType);
+              return (
+                <div
+                  key={log.id}
+                  className={clsx('border rounded-xl p-4 shadow-sm', style.card)}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={clsx('w-2 h-2 rounded-full shrink-0', style.dot)} />
+                      <span className={clsx('text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded', style.badge)}>
+                        {log.eventType}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider shrink-0">
+                      {log.timestamp ? format(log.timestamp.toDate(), 'MMM d, h:mm:ss a') : '--'}
+                    </span>
+                  </div>
+                  <p className="text-xs font-semibold text-slate-700 leading-snug mb-1">{log.description}</p>
+                  {log.oldValue && log.newValue && (
+                    <p className="text-[10px] font-mono font-bold text-slate-500">
+                      {log.oldValue} → {log.newValue}
+                    </p>
+                  )}
+                  <p className="text-[10px] text-slate-400 font-medium mt-2 truncate">{log.adminEmail}</p>
+                </div>
+              );
+            })}
           </div>
         )}
-        {auditLogs.map(log => {
-          const style = getAuditStyle(log.eventType);
-          return (
-            <div
-              key={log.id}
-              className={clsx('border rounded-xl p-4 shadow-sm', style.card)}
-            >
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className={clsx('w-2 h-2 rounded-full shrink-0', style.dot)} />
-                  <span className={clsx('text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded', style.badge)}>
-                    {log.eventType}
-                  </span>
-                </div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider shrink-0">
-                  {log.timestamp ? format(log.timestamp.toDate(), 'MMM d, h:mm:ss a') : '--'}
-                </span>
-              </div>
-              <p className="text-xs font-semibold text-slate-700 leading-snug mb-1">{log.description}</p>
-              {log.oldValue && log.newValue && (
-                <p className="text-[10px] font-mono font-bold text-slate-500">
-                  {log.oldValue} → {log.newValue}
-                </p>
-              )}
-              <p className="text-[10px] text-slate-400 font-medium mt-2 truncate">{log.adminEmail}</p>
-            </div>
-          );
-        })}
       </div>
     </div>
   );
