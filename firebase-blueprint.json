@@ -1,0 +1,94 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "email": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["role", "email", "createdAt"]
+    },
+    "SystemState": {
+      "title": "SystemState",
+      "description": "Current flood height and thresholds",
+      "type": "object",
+      "properties": {
+        "waterLevel": { "type": "number" },
+        "normalThreshold": { "type": "number" },
+        "warningThreshold": { "type": "number" },
+        "dangerThreshold": { "type": "number" },
+        "maxHeight": { "type": "number" },
+        "warningMessage": { "type": "string" },
+        "dangerMessage": { "type": "string" },
+        "normalMessage": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["waterLevel", "normalThreshold", "warningThreshold", "dangerThreshold", "updatedAt"]
+    },
+    "Alert": {
+      "title": "Alert",
+      "description": "Flood alert log",
+      "type": "object",
+      "properties": {
+        "level": { "type": "string", "enum": ["warning", "danger"] },
+        "message": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "resolvedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["level", "message", "active", "createdAt"]
+    },
+    "SosSignal": {
+      "title": "SosSignal",
+      "description": "SOS dispatched by a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "resolvedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "latitude", "longitude", "active", "createdAt"]
+    },
+    "SafeZone": {
+      "title": "SafeZone",
+      "description": "Manually marked safe zone by admin",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "type": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "lat", "lng", "type", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/systemState/{stateId}": {
+      "schema": { "$ref": "#/entities/SystemState" },
+      "description": "Global thresholds and current level"
+    },
+    "/alerts/{alertId}": {
+      "schema": { "$ref": "#/entities/Alert" },
+      "description": "Flood alerts"
+    },
+    "/sosSignals/{sosId}": {
+      "schema": { "$ref": "#/entities/SosSignal" },
+      "description": "User SOS signals"
+    },
+    "/safeZones/{zoneId}": {
+      "schema": { "$ref": "#/entities/SafeZone" },
+      "description": "Safe zones and evacuation centers"
+    }
+  }
+}

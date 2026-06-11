@@ -1,0 +1,6 @@
+{
+  "name": "HydroAlert",
+  "description": "Flood monitoring system with user and admin roles, real-time alerts, and SOS signaling with GPS tracking.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": []
+}

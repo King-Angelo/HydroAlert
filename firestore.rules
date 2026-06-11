@@ -1,0 +1,135 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { 
+      return isSignedIn() && 
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isValidId(id) { 
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    
+    function getIncoming() { return request.resource.data; }
+    function getExisting() { return resource.data; }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['role', 'email', 'createdAt', 'name', 'phone']) && 
+             data.keys().size() == 5 &&
+             data.role is string && (data.role == 'user' || data.role == 'admin') &&
+             data.email is string && data.email.size() <= 200 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.phone is string && data.phone.size() <= 20 &&
+             data.createdAt == request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && userId == request.auth.uid && isValidUser(getIncoming()) &&
+                       getIncoming().role == (getIncoming().email == 'newroskoto@gmail.com' ? 'admin' : 'user') &&
+                       getIncoming().email == request.auth.token.email;
+      allow update: if isSignedIn() && request.auth.uid == userId && 
+                    getIncoming().diff(getExisting()).affectedKeys().hasOnly(['name', 'phone']) ||
+                    (isAdmin() && getIncoming().diff(getExisting()).affectedKeys().hasOnly(['role']));
+    }
+
+    function isValidSystemState(data) {
+      return data.keys().hasAll(['waterLevel', 'normalThreshold', 'warningThreshold', 'dangerThreshold', 'maxHeight', 'updatedAt']) &&
+             data.keys().size() >= 6 && data.keys().size() <= 9 &&
+             data.waterLevel is string && data.waterLevel.matches('^[0-9]+(\\.[0-9]+)?$') &&
+             data.normalThreshold is string && data.normalThreshold.matches('^[0-9]+(\\.[0-9]+)?$') &&
+             data.warningThreshold is string && data.warningThreshold.matches('^[0-9]+(\\.[0-9]+)?$') &&
+             data.dangerThreshold is string && data.dangerThreshold.matches('^[0-9]+(\\.[0-9]+)?$') &&
+             data.maxHeight is string && data.maxHeight.matches('^[0-9]+(\\.[0-9]+)?$') &&
+             (!('warningMessage' in data) || data.warningMessage is string) &&
+             (!('dangerMessage' in data) || data.dangerMessage is string) &&
+             (!('normalMessage' in data) || data.normalMessage is string) &&
+             data.updatedAt == request.time;
+    }
+
+    match /systemState/{stateId} {
+      allow get, list: if isValidId(stateId);
+      allow create: if isAdmin() && isValidSystemState(getIncoming());
+      allow update: if (isAdmin()) && 
+                    isValidSystemState(getIncoming()) &&
+                    getIncoming().diff(getExisting()).affectedKeys().hasOnly(['waterLevel', 'normalThreshold', 'warningThreshold', 'dangerThreshold', 'maxHeight', 'warningMessage', 'dangerMessage', 'normalMessage', 'updatedAt']);
+    }
+
+    function isValidAlert(data) {
+      return data.keys().hasAll(['level', 'message', 'active', 'createdAt']) &&
+             data.keys().size() == 4 &&
+             data.level is string && (data.level == 'warning' || data.level == 'danger' || data.level == 'announcement') &&
+             data.message is string && data.message.size() <= 500 &&
+             data.active is bool &&
+             data.createdAt == request.time;
+    }
+    
+    function isValidAlertUpdate(data) {
+      return data.keys().hasAll(['level', 'message', 'active', 'createdAt', 'resolvedAt']) &&
+             data.keys().size() == 5 &&
+             data.level is string && (data.level == 'warning' || data.level == 'danger' || data.level == 'announcement') &&
+             data.message is string && data.message.size() <= 500 &&
+             data.active is bool &&
+             data.createdAt == getExisting().createdAt && 
+             data.resolvedAt == request.time;
+    }
+
+    match /alerts/{alertId} {
+      allow get, list: if isSignedIn();
+      allow create: if isAdmin() && isValidAlert(getIncoming());
+      allow update: if isAdmin() && isValidAlertUpdate(getIncoming()) &&
+                    getIncoming().diff(getExisting()).affectedKeys().hasOnly(['active', 'resolvedAt']);
+    }
+
+    function isValidSos(data) {
+      return data.keys().hasAll(['userId', 'latitude', 'longitude', 'active', 'createdAt']) &&
+             data.keys().size() == 5 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.latitude is number && data.longitude is number &&
+             data.active is bool && data.active == true &&
+             data.createdAt == request.time;
+    }
+
+    function isValidSosUpdate(data) {
+       return data.keys().hasAll(['userId', 'latitude', 'longitude', 'active', 'createdAt', 'resolvedAt']) &&
+             data.keys().size() == 6 &&
+             data.userId == getExisting().userId &&
+             data.latitude == getExisting().latitude &&
+             data.longitude == getExisting().longitude &&
+             data.active is bool && data.active == false &&
+             data.createdAt == getExisting().createdAt &&
+             data.resolvedAt == request.time;
+    }
+
+    match /sosSignals/{sosId} {
+      allow get, list: if isSignedIn() && (getExisting().userId == request.auth.uid || isAdmin() || request.query.limit > 0);
+      allow create: if isSignedIn() && isValidSos(getIncoming());
+      allow update: if (isAdmin() || request.auth.uid == getExisting().userId) &&
+                    isValidSosUpdate(getIncoming()) &&
+                    getIncoming().diff(getExisting()).affectedKeys().hasOnly(['active', 'resolvedAt']);
+    }
+
+    function isValidSafeZone(data) {
+      return data.keys().hasAll(['name', 'lat', 'lng', 'type', 'createdAt']) &&
+             data.keys().size() == 5 &&
+             data.name is string && data.name.size() <= 200 &&
+             data.lat is number && data.lng is number &&
+             data.type is string && data.type.size() <= 100 &&
+             data.createdAt == request.time;
+    }
+
+    match /safeZones/{zoneId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() && isValidSafeZone(getIncoming());
+      allow update: if isAdmin() && isValidSafeZone(getIncoming());
+      allow delete: if isAdmin();
+    }
+  }
+}
