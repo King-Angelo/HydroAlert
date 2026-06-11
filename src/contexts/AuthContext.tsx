@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { auth, db, logAuditEvent } from '../lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 
 interface AuthContextType {
@@ -19,6 +19,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<'admin' | 'user' | null>(null);
   const [userData, setUserData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const isInitialAuthCheck = useRef(true);
+  const prevAuthRef = useRef<{ uid: string | null; role: 'admin' | 'user' | null; email: string | null }>({
+    uid: null,
+    role: null,
+    email: null,
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -58,21 +64,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await setDoc(userDocRef, initialData);
             finalData = initialData;
           }
+          if (
+            finalRole === 'admin' &&
+            !isInitialAuthCheck.current &&
+            prevAuthRef.current.uid !== currentUser.uid
+          ) {
+            await logAuditEvent(
+              currentUser.email ?? 'unknown',
+              'Admin Login',
+              'Administrator signed in'
+            );
+          }
+
           setRole(finalRole);
           setUserData(finalData);
           setUser(currentUser);
+          prevAuthRef.current = {
+            uid: currentUser.uid,
+            role: finalRole,
+            email: currentUser.email,
+          };
         } catch (error) {
           console.error("AuthContext Firestore Error:", error);
           const adminEmails = ['newroskoto@gmail.com', 'mkamangahas@tip.edu.ph'];
           const fallbackRole = adminEmails.includes(currentUser.email ?? '') ? 'admin' : 'user';
           setRole(fallbackRole);
           setUser(currentUser);
+          prevAuthRef.current = {
+            uid: currentUser.uid,
+            role: fallbackRole,
+            email: currentUser.email,
+          };
         }
       } else {
+        if (prevAuthRef.current.role === 'admin' && prevAuthRef.current.email) {
+          await logAuditEvent(
+            prevAuthRef.current.email,
+            'Admin Logout',
+            'Administrator signed out'
+          );
+        }
         setUser(null);
         setRole(null);
         setUserData(null);
+        prevAuthRef.current = { uid: null, role: null, email: null };
       }
+      isInitialAuthCheck.current = false;
       setLoading(false);
     });
 

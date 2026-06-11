@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, enableIndexedDbPersistence, doc, setDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
 import defaultFirebaseConfig from '../../firebase-applet-config.json';
 
 const firebaseConfig = import.meta.env.VITE_FIREBASE_API_KEY ? {
@@ -54,6 +54,27 @@ export const loginWithEmail = async (email: string, pass: string) => {
 export const resetPassword = async (email: string) => {
   await sendPasswordResetEmail(auth, email);
 };
+
+export async function logAuditEvent(
+  adminEmail: string,
+  eventType: string,
+  description: string,
+  oldValue?: string,
+  newValue?: string
+) {
+  try {
+    await addDoc(collection(db, 'auditLogs'), {
+      timestamp: serverTimestamp(),
+      adminEmail,
+      eventType,
+      description,
+      ...(oldValue !== undefined ? { oldValue } : {}),
+      ...(newValue !== undefined ? { newValue } : {}),
+    });
+  } catch (error) {
+    console.error('Failed to write audit log:', error);
+  }
+}
 
 export const signOut = async () => {
 

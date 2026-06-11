@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, signOut, handleFirestoreError, OperationType } from '../lib/firebase';
 import { formatMeters, meterValue } from '../lib/systemState';
-import { doc, onSnapshot, collection, query, where, orderBy, setDoc, updateDoc, serverTimestamp, getDocs, addDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, orderBy, limit, setDoc, updateDoc, serverTimestamp, getDocs, addDoc } from 'firebase/firestore';
 import { WaveBackground } from '../components/WaveBackground';
-import { LogOut, Activity, Settings2, AlertCircle, Navigation, CheckCircle, ShieldAlert, MapPin, Users, UserCog, Map as MapIcon, Home, Bell, Settings } from 'lucide-react';
+import { LogOut, Activity, Settings2, AlertCircle, Navigation, CheckCircle, ShieldAlert, MapPin, Users, UserCog, Map as MapIcon, Home, Bell, Settings, ScrollText } from 'lucide-react';
 import { format } from 'date-fns';
 import { SafeMap } from '../components/SafeMap';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -27,6 +27,23 @@ export const AdminDashboard: React.FC = () => {
 
   const [newAlert, setNewAlert] = useState({ message: '', level: 'warning' });
   const [newAnnouncement, setNewAnnouncement] = useState('');
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+
+  const getAuditStyle = (eventType: string) => {
+    switch (eventType) {
+      case 'Admin Login':
+      case 'Admin Logout':
+        return { card: 'border-green-200 bg-green-50', badge: 'bg-green-500 text-white', dot: 'bg-green-500' };
+      case 'Max Sensor Height Changed':
+        return { card: 'border-blue-200 bg-blue-50', badge: 'bg-blue-500 text-white', dot: 'bg-blue-500' };
+      case 'Threshold Changed':
+        return { card: 'border-yellow-200 bg-yellow-50', badge: 'bg-yellow-500 text-white', dot: 'bg-yellow-500' };
+      case 'SOS Triggered':
+        return { card: 'border-red-200 bg-red-50', badge: 'bg-red-500 text-white', dot: 'bg-red-500' };
+      default:
+        return { card: 'border-slate-200 bg-slate-50', badge: 'bg-slate-500 text-white', dot: 'bg-slate-400' };
+    }
+  };
 
   useEffect(() => {
     const initSystem = async () => {
@@ -79,12 +96,18 @@ export const AdminDashboard: React.FC = () => {
       setSafeZones(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), isCustom: true })));
     }, (error) => handleFirestoreError(error, OperationType.GET, 'safeZones'));
 
+    const qAudit = query(collection(db, 'auditLogs'), orderBy('timestamp', 'desc'), limit(50));
+    const unsubAudit = onSnapshot(qAudit, (snapshot) => {
+      setAuditLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'auditLogs'));
+
     return () => {
       unsubState();
       unsubAlerts();
       unsubSos();
       unsubUsers();
       unsubZones();
+      unsubAudit();
     };
   }, []);
 
@@ -457,8 +480,8 @@ export const AdminDashboard: React.FC = () => {
                </div>
             </div>
           ) : (
-          <div className="w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-              <div className="bg-white/90 backdrop-blur-md border border-white/50 rounded-[1.5rem] p-6 shadow-xl flex flex-col">
+          <div className="w-full flex flex-col lg:flex-row gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              <div className="lg:w-2/3 bg-white/90 backdrop-blur-md border border-white/50 rounded-[1.5rem] p-6 shadow-xl flex flex-col">
                  <div className="flex justify-between items-center mb-6">
                     <div>
                       <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
@@ -515,7 +538,7 @@ export const AdminDashboard: React.FC = () => {
                  </div>
 
                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 border-b border-dashed border-slate-200 pb-2">Active Evacuation Centers</h3>
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                    {safeZones.length === 0 && (
                       <div className="col-span-full py-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-xl">
                          <p className="text-slate-400 text-xs font-medium italic">No custom zones added yet. Click the map to add one.</p>
@@ -533,6 +556,50 @@ export const AdminDashboard: React.FC = () => {
                      </div>
                    ))}
                  </div>
+              </div>
+
+              <div className="lg:w-1/3 bg-white/90 backdrop-blur-md border border-white/50 rounded-[1.5rem] p-6 shadow-xl flex flex-col h-full">
+                <h2 className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-4 flex items-center gap-2">
+                  <ScrollText className="w-4 h-4" /> Audit Trail
+                </h2>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4">
+                  Latest 50 system events
+                </p>
+                <div className="h-[450px] overflow-y-auto flex flex-col gap-3 pr-1">
+                  {auditLogs.length === 0 && (
+                    <div className="flex-1 flex items-center justify-center bg-slate-50 border border-dashed border-slate-200 rounded-xl p-6">
+                      <p className="text-slate-400 text-xs font-medium italic text-center">No audit events recorded yet.</p>
+                    </div>
+                  )}
+                  {auditLogs.map(log => {
+                    const style = getAuditStyle(log.eventType);
+                    return (
+                      <div
+                        key={log.id}
+                        className={clsx('border rounded-xl p-4 shadow-sm', style.card)}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={clsx('w-2 h-2 rounded-full shrink-0', style.dot)} />
+                            <span className={clsx('text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded', style.badge)}>
+                              {log.eventType}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider shrink-0">
+                            {log.timestamp ? format(log.timestamp.toDate(), 'MMM d, h:mm:ss a') : '--'}
+                          </span>
+                        </div>
+                        <p className="text-xs font-semibold text-slate-700 leading-snug mb-1">{log.description}</p>
+                        {log.oldValue && log.newValue && (
+                          <p className="text-[10px] font-mono font-bold text-slate-500">
+                            {log.oldValue} → {log.newValue}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-slate-400 font-medium mt-2 truncate">{log.adminEmail}</p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
            </div>
           )}

@@ -161,5 +161,21 @@ service cloud.firestore {
       allow update: if isAdmin() && isValidSafeZone(getIncoming());
       allow delete: if isAdmin();
     }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['timestamp', 'adminEmail', 'eventType', 'description']) &&
+             data.keys().size() >= 4 && data.keys().size() <= 6 &&
+             data.timestamp == request.time &&
+             data.adminEmail is string && data.adminEmail.size() <= 200 &&
+             data.eventType is string && data.eventType.size() <= 100 &&
+             data.description is string && data.description.size() <= 500 &&
+             (!('oldValue' in data) || (data.oldValue is string && data.oldValue.size() <= 200)) &&
+             (!('newValue' in data) || (data.newValue is string && data.newValue.size() <= 200));
+    }
+
+    match /auditLogs/{logId} {
+      allow create: if isSignedIn() && isValidAuditLog(getIncoming());
+      allow get, list: if isAdmin();
+    }
   }
 }

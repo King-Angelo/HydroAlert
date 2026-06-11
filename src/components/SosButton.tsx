@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import { auth, logAuditEvent } from '../lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import clsx from 'clsx';
 
@@ -41,10 +42,13 @@ export const SosButton: React.FC<SosButtonProps> = ({ onSosTrigger, disabled }) 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          onSosTrigger({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
+          const { latitude, longitude } = position.coords;
+          logAuditEvent(
+            auth.currentUser?.email ?? 'unknown',
+            'SOS Triggered',
+            `SOS activated at ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+          );
+          onSosTrigger({ latitude, longitude });
         },
         (error) => {
           console.error("Error getting location: ", error);

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { db, signOut, handleFirestoreError, OperationType } from '../lib/firebase';
+import { db, signOut, handleFirestoreError, OperationType, logAuditEvent } from '../lib/firebase';
 import { meterValue } from '../lib/systemState';
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
@@ -79,6 +79,29 @@ export const DeviceSettings: React.FC = () => {
         dangerMessage: formData.dangerMessage,
         updatedAt: serverTimestamp()
       });
+
+      const adminEmail = user?.email ?? 'unknown';
+      const auditFields = [
+        { key: 'maxHeight' as const, label: 'Maximum Sensor Height', eventType: 'Max Sensor Height Changed' },
+        { key: 'normalThreshold' as const, label: 'Normal Threshold', eventType: 'Threshold Changed' },
+        { key: 'warningThreshold' as const, label: 'Warning Threshold', eventType: 'Threshold Changed' },
+        { key: 'dangerThreshold' as const, label: 'Danger Threshold', eventType: 'Threshold Changed' },
+      ];
+
+      for (const field of auditFields) {
+        const oldVal = Number(systemState?.[field.key] ?? 0).toFixed(2);
+        const newVal = Number(formData[field.key]).toFixed(2);
+        if (oldVal !== newVal) {
+          await logAuditEvent(
+            adminEmail,
+            field.eventType,
+            `${field.label} changed from ${oldVal}m to ${newVal}m`,
+            `${oldVal}m`,
+            `${newVal}m`
+          );
+        }
+      }
+
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (error) {
