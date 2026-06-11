@@ -6,10 +6,16 @@ service cloud.firestore {
     }
 
     function isSignedIn() { return request.auth != null; }
+    function isAdminEmail() {
+      return isSignedIn() &&
+        request.auth.token.email in ['newroskoto@gmail.com', 'mkamangahas@tip.edu.ph'];
+    }
     function isAdmin() { 
-      return isSignedIn() && 
-         exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn() && (
+         isAdminEmail() ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
     }
     
     function isValidId(id) { 
@@ -39,7 +45,7 @@ service cloud.firestore {
                     getIncoming().diff(getExisting()).affectedKeys().hasOnly(['name', 'phone']) ||
                     getIncoming().diff(getExisting()).affectedKeys().hasOnly(['name', 'phone', 'updatedAt']) ||
                     (getIncoming().diff(getExisting()).affectedKeys().hasOnly(['role']) &&
-                     getExisting().email in ['newroskoto@gmail.com', 'mkamangahas@tip.edu.ph'] &&
+                     isAdminEmail() &&
                      getIncoming().role == 'admin')
                   ) ||
                     (isAdmin() && getIncoming().diff(getExisting()).affectedKeys().hasOnly(['role']));
@@ -52,7 +58,7 @@ service cloud.firestore {
 
     function isValidSystemState(data) {
       return data.keys().hasAll(['waterLevel', 'normalThreshold', 'warningThreshold', 'dangerThreshold', 'maxHeight', 'updatedAt']) &&
-             data.keys().size() >= 6 && data.keys().size() <= 9 &&
+             data.keys().size() >= 6 && data.keys().size() <= 12 &&
              isValidSystemStateField(data.waterLevel) &&
              isValidSystemStateField(data.normalThreshold) &&
              isValidSystemStateField(data.warningThreshold) &&
@@ -64,11 +70,24 @@ service cloud.firestore {
              data.updatedAt == request.time;
     }
 
+    function isValidSystemStateUpdate(data) {
+      return data.keys().hasAll(['waterLevel', 'normalThreshold', 'warningThreshold', 'dangerThreshold', 'updatedAt']) &&
+             isValidSystemStateField(data.waterLevel) &&
+             isValidSystemStateField(data.normalThreshold) &&
+             isValidSystemStateField(data.warningThreshold) &&
+             isValidSystemStateField(data.dangerThreshold) &&
+             (!('maxHeight' in data) || isValidSystemStateField(data.maxHeight)) &&
+             (!('warningMessage' in data) || data.warningMessage is string) &&
+             (!('dangerMessage' in data) || data.dangerMessage is string) &&
+             (!('normalMessage' in data) || data.normalMessage is string) &&
+             data.updatedAt == request.time;
+    }
+
     match /systemState/{stateId} {
       allow get, list: if isValidId(stateId);
       allow create: if isAdmin() && isValidSystemState(getIncoming());
-      allow update: if (isAdmin()) && 
-                    isValidSystemState(getIncoming()) &&
+      allow update: if isAdmin() && 
+                    isValidSystemStateUpdate(getIncoming()) &&
                     getIncoming().diff(getExisting()).affectedKeys().hasOnly(['waterLevel', 'normalThreshold', 'warningThreshold', 'dangerThreshold', 'maxHeight', 'warningMessage', 'dangerMessage', 'normalMessage', 'updatedAt']);
     }
 
@@ -119,7 +138,8 @@ service cloud.firestore {
     }
 
     match /sosSignals/{sosId} {
-      allow get, list: if isSignedIn() && (getExisting().userId == request.auth.uid || isAdmin() || request.query.limit > 0);
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
       allow create: if isSignedIn() && isValidSos(getIncoming());
       allow update: if (isAdmin() || request.auth.uid == getExisting().userId) &&
                     isValidSosUpdate(getIncoming()) &&

@@ -63,7 +63,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(currentUser);
         } catch (error) {
           console.error("AuthContext Firestore Error:", error);
-          setRole('user');
+          const adminEmails = ['newroskoto@gmail.com', 'mkamangahas@tip.edu.ph'];
+          const fallbackRole = adminEmails.includes(currentUser.email ?? '') ? 'admin' : 'user';
+          setRole(fallbackRole);
           setUser(currentUser);
         }
       } else {
