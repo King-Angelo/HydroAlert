@@ -45,7 +45,7 @@ export const DeviceSettings: React.FC = () => {
           normalThreshold: Number(data.normalThreshold),
           warningThreshold: Number(data.warningThreshold),
           dangerThreshold: Number(data.dangerThreshold),
-          maxHeight: Number(data.maxHeight) || 4,
+          maxHeight: Math.min(4, Math.max(1, Math.round(Number(data.maxHeight) || 4))),
           normalMessage: data.normalMessage || 'System Normal',
           warningMessage: data.warningMessage || 'Warning: Rising Water',
           dangerMessage: data.dangerMessage || 'Danger: Evacuate Now'
