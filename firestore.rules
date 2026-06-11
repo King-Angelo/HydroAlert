@@ -83,12 +83,18 @@ service cloud.firestore {
              data.updatedAt == request.time;
     }
 
+    function isValidDeviceWaterLevelUpdate() {
+      return getIncoming().diff(getExisting()).affectedKeys().hasOnly(['waterLevel']) &&
+             isValidSystemStateField(getIncoming().waterLevel);
+    }
+
     match /systemState/{stateId} {
       allow get, list: if isValidId(stateId);
       allow create: if isAdmin() && isValidSystemState(getIncoming());
-      allow update: if isAdmin() && 
+      allow update: if (isAdmin() && 
                     isValidSystemStateUpdate(getIncoming()) &&
-                    getIncoming().diff(getExisting()).affectedKeys().hasOnly(['waterLevel', 'normalThreshold', 'warningThreshold', 'dangerThreshold', 'maxHeight', 'warningMessage', 'dangerMessage', 'normalMessage', 'updatedAt']);
+                    getIncoming().diff(getExisting()).affectedKeys().hasOnly(['waterLevel', 'normalThreshold', 'warningThreshold', 'dangerThreshold', 'maxHeight', 'warningMessage', 'dangerMessage', 'normalMessage', 'updatedAt']))
+                    || (stateId == 'current' && request.auth == null && isValidDeviceWaterLevelUpdate());
     }
 
     function isValidAlert(data) {
