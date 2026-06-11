@@ -20,7 +20,7 @@ export const AdminDashboard: React.FC = () => {
   const [sosSignals, setSosSignals] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [safeZones, setSafeZones] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'map'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'map' | 'audit'>('overview');
   
   const [isAddingZone, setIsAddingZone] = useState<[number, number] | null>(null);
   const [zoneName, setZoneName] = useState('');
@@ -44,6 +44,52 @@ export const AdminDashboard: React.FC = () => {
         return { card: 'border-slate-200 bg-slate-50', badge: 'bg-slate-500 text-white', dot: 'bg-slate-400' };
     }
   };
+
+  const renderAuditTrail = () => (
+    <div className="bg-white/90 backdrop-blur-md border border-white/50 rounded-[1.5rem] p-6 shadow-xl flex flex-col">
+      <h2 className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-4 flex items-center gap-2">
+        <ScrollText className="w-4 h-4" /> Audit Trail
+      </h2>
+      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4">
+        Latest 50 system events
+      </p>
+      <div className="h-[450px] overflow-y-auto flex flex-col gap-3 pr-1">
+        {auditLogs.length === 0 && (
+          <div className="flex-1 flex items-center justify-center bg-slate-50 border border-dashed border-slate-200 rounded-xl p-6">
+            <p className="text-slate-400 text-xs font-medium italic text-center">No audit events recorded yet.</p>
+          </div>
+        )}
+        {auditLogs.map(log => {
+          const style = getAuditStyle(log.eventType);
+          return (
+            <div
+              key={log.id}
+              className={clsx('border rounded-xl p-4 shadow-sm', style.card)}
+            >
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={clsx('w-2 h-2 rounded-full shrink-0', style.dot)} />
+                  <span className={clsx('text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded', style.badge)}>
+                    {log.eventType}
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider shrink-0">
+                  {log.timestamp ? format(log.timestamp.toDate(), 'MMM d, h:mm:ss a') : '--'}
+                </span>
+              </div>
+              <p className="text-xs font-semibold text-slate-700 leading-snug mb-1">{log.description}</p>
+              {log.oldValue && log.newValue && (
+                <p className="text-[10px] font-mono font-bold text-slate-500">
+                  {log.oldValue} → {log.newValue}
+                </p>
+              )}
+              <p className="text-[10px] text-slate-400 font-medium mt-2 truncate">{log.adminEmail}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   useEffect(() => {
     const initSystem = async () => {
@@ -274,6 +320,12 @@ export const AdminDashboard: React.FC = () => {
                    >
                      Map
                    </button>
+                   <button 
+                     onClick={() => setActiveTab('audit')}
+                     className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'audit' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                   >
+                     Audit Trail
+                   </button>
                  </nav>
                  <Link 
                    to="/admin/settings" 
@@ -479,9 +531,9 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                </div>
             </div>
-          ) : (
-          <div className="w-full flex flex-col lg:flex-row gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-              <div className="lg:w-2/3 bg-white/90 backdrop-blur-md border border-white/50 rounded-[1.5rem] p-6 shadow-xl flex flex-col">
+          ) : activeTab === 'map' ? (
+          <div className="w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              <div className="bg-white/90 backdrop-blur-md border border-white/50 rounded-[1.5rem] p-6 shadow-xl flex flex-col">
                  <div className="flex justify-between items-center mb-6">
                     <div>
                       <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
@@ -538,7 +590,7 @@ export const AdminDashboard: React.FC = () => {
                  </div>
 
                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 border-b border-dashed border-slate-200 pb-2">Active Evacuation Centers</h3>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                    {safeZones.length === 0 && (
                       <div className="col-span-full py-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-xl">
                          <p className="text-slate-400 text-xs font-medium italic">No custom zones added yet. Click the map to add one.</p>
@@ -557,87 +609,58 @@ export const AdminDashboard: React.FC = () => {
                    ))}
                  </div>
               </div>
-
-              <div className="lg:w-1/3 bg-white/90 backdrop-blur-md border border-white/50 rounded-[1.5rem] p-6 shadow-xl flex flex-col h-full">
-                <h2 className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-4 flex items-center gap-2">
-                  <ScrollText className="w-4 h-4" /> Audit Trail
-                </h2>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4">
-                  Latest 50 system events
-                </p>
-                <div className="h-[450px] overflow-y-auto flex flex-col gap-3 pr-1">
-                  {auditLogs.length === 0 && (
-                    <div className="flex-1 flex items-center justify-center bg-slate-50 border border-dashed border-slate-200 rounded-xl p-6">
-                      <p className="text-slate-400 text-xs font-medium italic text-center">No audit events recorded yet.</p>
-                    </div>
-                  )}
-                  {auditLogs.map(log => {
-                    const style = getAuditStyle(log.eventType);
-                    return (
-                      <div
-                        key={log.id}
-                        className={clsx('border rounded-xl p-4 shadow-sm', style.card)}
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className={clsx('w-2 h-2 rounded-full shrink-0', style.dot)} />
-                            <span className={clsx('text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded', style.badge)}>
-                              {log.eventType}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider shrink-0">
-                            {log.timestamp ? format(log.timestamp.toDate(), 'MMM d, h:mm:ss a') : '--'}
-                          </span>
-                        </div>
-                        <p className="text-xs font-semibold text-slate-700 leading-snug mb-1">{log.description}</p>
-                        {log.oldValue && log.newValue && (
-                          <p className="text-[10px] font-mono font-bold text-slate-500">
-                            {log.oldValue} → {log.newValue}
-                          </p>
-                        )}
-                        <p className="text-[10px] text-slate-400 font-medium mt-2 truncate">{log.adminEmail}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
            </div>
+          ) : (
+          <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
+            {renderAuditTrail()}
+          </div>
           )}
        </main>
 
        {/* Bottom Navigation for Mobile */}
-       <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-white/90 backdrop-blur-xl border border-white/50 rounded-[2rem] p-2 shadow-2xl z-50 flex md:hidden items-center justify-around overflow-hidden">
+       <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-md bg-white/90 backdrop-blur-xl border border-white/50 rounded-[2rem] p-2 shadow-2xl z-50 flex md:hidden items-center justify-around overflow-hidden">
         <button 
           onClick={() => setActiveTab('overview')}
           className={clsx(
-            "flex flex-col items-center gap-1 py-3 px-6 rounded-2xl transition-all duration-300",
+            "flex flex-col items-center gap-1 py-3 px-4 rounded-2xl transition-all duration-300",
             activeTab === 'overview' ? "bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105" : "text-slate-400 hover:text-slate-600"
           )}
         >
-          <Home className="w-6 h-6" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">Home</span>
+          <Home className="w-5 h-5" />
+          <span className="text-[9px] font-bold uppercase tracking-wider">Home</span>
         </button>
 
         <button 
           onClick={() => setActiveTab('users')}
           className={clsx(
-            "flex flex-col items-center gap-1 py-3 px-6 rounded-2xl transition-all duration-300",
+            "flex flex-col items-center gap-1 py-3 px-4 rounded-2xl transition-all duration-300",
             activeTab === 'users' ? "bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105" : "text-slate-400 hover:text-slate-600"
           )}
         >
-          <Users className="w-6 h-6" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">Users</span>
+          <Users className="w-5 h-5" />
+          <span className="text-[9px] font-bold uppercase tracking-wider">Users</span>
         </button>
 
         <button 
           onClick={() => setActiveTab('map')}
           className={clsx(
-            "flex flex-col items-center gap-1 py-3 px-6 rounded-2xl transition-all duration-300",
+            "flex flex-col items-center gap-1 py-3 px-4 rounded-2xl transition-all duration-300",
             activeTab === 'map' ? "bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105" : "text-slate-400 hover:text-slate-600"
           )}
         >
-          <MapIcon className="w-6 h-6" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">Map</span>
+          <MapIcon className="w-5 h-5" />
+          <span className="text-[9px] font-bold uppercase tracking-wider">Map</span>
+        </button>
+
+        <button 
+          onClick={() => setActiveTab('audit')}
+          className={clsx(
+            "flex flex-col items-center gap-1 py-3 px-4 rounded-2xl transition-all duration-300",
+            activeTab === 'audit' ? "bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105" : "text-slate-400 hover:text-slate-600"
+          )}
+        >
+          <ScrollText className="w-5 h-5" />
+          <span className="text-[9px] font-bold uppercase tracking-wider">Audit</span>
         </button>
       </nav>
     </motion.div>
