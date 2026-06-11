@@ -71,7 +71,7 @@ export const DeviceSettings: React.FC = () => {
         normalThreshold: Number(formData.normalThreshold).toFixed(1),
         warningThreshold: Number(formData.warningThreshold).toFixed(1),
         dangerThreshold: Number(formData.dangerThreshold).toFixed(1),
-        maxHeight: Number(formData.maxHeight).toFixed(1),
+        maxHeight: Number(formData.maxHeight).toFixed(2),
         normalMessage: formData.normalMessage,
         warningMessage: formData.warningMessage,
         dangerMessage: formData.dangerMessage,
@@ -177,10 +177,10 @@ export const DeviceSettings: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-end">
                     <label className="text-slate-500 font-black uppercase text-[10px] tracking-widest">Maximum Sensor Height</label>
-                    <span className="text-slate-900 font-mono font-bold text-lg">{formData.maxHeight.toFixed(1)}m</span>
+                    <span className="text-slate-900 font-mono font-bold text-lg">{formData.maxHeight.toFixed(2)}m</span>
                   </div>
                   <input 
-                    type="range" min="0.2" max="4" step="0.1" 
+                    type="range" min="1" max="4" step="1" 
                     value={formData.maxHeight} 
                     onChange={e => {
                       const val = parseFloat(e.target.value);
