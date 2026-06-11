@@ -233,8 +233,8 @@ export const UserDashboard: React.FC = () => {
                   </div>
                   {systemState && (
                     <div className="mt-4 flex gap-4 text-[9px] font-black uppercase tracking-[0.1em] text-slate-400">
-                      <span>Normal: {Number(systemState.normalThreshold).toFixed(1)}m</span>
-                      <span className="text-orange-400">Warn: {Number(systemState.warningThreshold).toFixed(1)}m</span>
+                      <span>Normal: {Number(systemState.normalThreshold).toFixed(2)}m</span>
+                      <span className="text-orange-400">Warn: {Number(systemState.warningThreshold).toFixed(2)}m</span>
                     </div>
                   )}
                   <div className={clsx(

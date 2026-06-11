@@ -19,8 +19,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 const char* ssid = "Titus 3:5-7";
 const char* password = "toGodbetheglory";
 
-String PROJECT_ID = "hyrdoalert";
-String API_KEY = "AIzaSyDk0JrLNQdTU0FKef7RIw1HKxlQk1QzjLE";
+String PROJECT_ID = "hydroalert-a6173";
+String API_KEY = "AIzaSyAW2F1xQPumqGlxv2yjAaYgmUc8WDMI7DM";
 
 // ================== PIN DEFINITIONS ==================
 #define TRIG_PIN 18
@@ -40,7 +40,7 @@ String phoneList[30];
 int phoneCount = 0;
 
 unsigned long lastFirestoreUpdate = 0;
-const unsigned long FIRESTORE_INTERVAL = 60000;
+const unsigned long FIRESTORE_INTERVAL = 10000;
 
 unsigned long lastCheck = 0;
 const unsigned long CHECK_INTERVAL = 5000;
