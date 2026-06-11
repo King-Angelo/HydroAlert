@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 import { getFirestore, enableIndexedDbPersistence, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import defaultFirebaseConfig from '../../firebase-applet-config.json';
 
@@ -49,6 +49,10 @@ export const signUpWithEmail = async (email: string, pass: string, name: string,
 export const loginWithEmail = async (email: string, pass: string) => {
   const result = await signInWithEmailAndPassword(auth, email, pass);
   return result.user;
+};
+
+export const resetPassword = async (email: string) => {
+  await sendPasswordResetEmail(auth, email);
 };
 
 export const signOut = async () => {

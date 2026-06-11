@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { signUpWithEmail, loginWithEmail, signInWithGoogle, db, handleFirestoreError, OperationType, signOut } from '../lib/firebase';
+import { signUpWithEmail, loginWithEmail, signInWithGoogle, resetPassword, db, handleFirestoreError, OperationType, signOut } from '../lib/firebase';
 import { Droplet, ShieldAlert, Mail, Eye, EyeOff, User, Phone, LogOut } from 'lucide-react';
 import { WaveBackground } from '../components/WaveBackground';
 import { doc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
@@ -10,6 +10,7 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isCompletingProfile, setIsCompletingProfile] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [systemState, setSystemState] = useState<any>(null);
@@ -52,6 +53,53 @@ export const Login: React.FC = () => {
   }, [user, role, userData]);
 
   const validatePhone = (p: string) => /^\d{10,15}$/.test(p.replace(/[\s\-\+]/g, ''));
+
+  const getAuthErrorMessage = (err: any) => {
+    const code = err?.code || '';
+    switch (code) {
+      case 'auth/invalid-credential':
+      case 'auth/wrong-password':
+      case 'auth/user-not-found':
+        return 'Invalid email or password. If you signed up with Google, use Continue with Google or reset your password below.';
+      case 'auth/invalid-email':
+        return 'Please enter a valid email address.';
+      case 'auth/too-many-requests':
+        return 'Too many attempts. Please wait a few minutes and try again.';
+      case 'auth/user-disabled':
+        return 'This account has been disabled.';
+      default:
+        return err?.message || 'Authentication failed';
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await resetPassword(email);
+      setMessage('Password reset email sent. Check your inbox and spam folder.');
+      setIsForgotPassword(false);
+    } catch (err: any) {
+      const code = err?.code || '';
+      if (code === 'auth/user-not-found') {
+        setError('No account found with this email. Try signing up or use Google sign-in.');
+      } else if (code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else {
+        setError(err?.message || 'Failed to send reset email');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,7 +160,7 @@ export const Login: React.FC = () => {
         await loginWithEmail(email, password);
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+      setError(getAuthErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -125,6 +173,75 @@ export const Login: React.FC = () => {
       setError(err.message || 'Failed to login');
     }
   };
+
+  if (isForgotPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center relative bg-transparent p-4">
+        <WaveBackground level={waveLevel} state={floodState} />
+        <div className="bg-white/85 backdrop-blur-md p-8 rounded-[1.5rem] shadow-xl border border-white/50 max-w-sm w-full">
+          <div className="flex justify-center mb-6">
+            <img 
+              src="https://gjfwrphhhgodjhtgwmum.supabase.co/storage/v1/object/public/Logos/hydro_alert.png" 
+              alt="HydroAlert Logo" 
+              className="w-20 h-20 object-contain"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          <h2 className="text-xl font-bold text-blue-900 mb-2 text-center">Reset Password</h2>
+          <p className="text-slate-500 text-center mb-6 text-sm">
+            Enter your email and we&apos;ll send you a link to reset your password.
+          </p>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-600 p-3 rounded-lg text-sm text-center mb-4">
+              {error}
+            </div>
+          )}
+
+          {message && (
+            <div className="bg-green-500/10 border border-green-500/20 text-green-700 p-3 rounded-lg text-sm text-center mb-4">
+              {message}
+            </div>
+          )}
+
+          <form onSubmit={handleForgotPassword} className="flex flex-col gap-4">
+            <div>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-3 text-slate-800 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all font-medium text-sm"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+            </div>
+            <button 
+              type="submit" 
+              disabled={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-70 text-white font-bold py-3 px-4 rounded-lg transition-colors mt-2"
+            >
+              {isLoading ? 'Sending...' : 'Send Reset Link'}
+            </button>
+            <button 
+              type="button"
+              onClick={() => {
+                setIsForgotPassword(false);
+                setError('');
+                setMessage('');
+              }}
+              className="w-full text-slate-400 hover:text-slate-600 font-semibold py-2 text-sm transition-colors"
+            >
+              Back to Log In
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   if (isCompletingProfile) {
     return (
@@ -273,7 +390,22 @@ export const Login: React.FC = () => {
             </div>
           </div>
           <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Password</label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Password</label>
+              {!isSignUp && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPassword(true);
+                    setError('');
+                    setMessage('');
+                  }}
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-700 focus:outline-none"
+                >
+                  Forgot password?
+                </button>
+              )}
+            </div>
             <div className="relative">
               <input 
                  type={showPassword ? "text" : "password"} 
@@ -335,7 +467,7 @@ export const Login: React.FC = () => {
 
         <p className="text-center text-sm font-medium text-slate-500">
            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-           <button onClick={() => setIsSignUp(!isSignUp)} type="button" className="text-blue-600 hover:text-blue-700 font-bold focus:outline-none">
+           <button onClick={() => { setIsSignUp(!isSignUp); setIsForgotPassword(false); setError(''); setMessage(''); }} type="button" className="text-blue-600 hover:text-blue-700 font-bold focus:outline-none">
              {isSignUp ? 'Log in' : 'Sign up'}
            </button>
         </p>      
