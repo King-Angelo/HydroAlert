@@ -213,15 +213,7 @@ export const DeviceSettings: React.FC = () => {
                   <input 
                     type="range" min="0" max={formData.maxHeight} step="0.01" 
                     value={formData.normalThreshold} 
-                    onChange={e => {
-                      const val = parseFloat(e.target.value);
-                      setFormData(prev => ({
-                        ...prev,
-                        normalThreshold: val,
-                        warningThreshold: Math.max(prev.warningThreshold, Math.min(val + 0.1, prev.maxHeight)),
-                        dangerThreshold: Math.max(prev.dangerThreshold, Math.min(val + 0.2, prev.maxHeight))
-                      }));
-                    }} 
+                    onChange={e => setFormData(prev => ({ ...prev, normalThreshold: parseFloat(e.target.value) }))} 
                     className="w-full h-3 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-green-600" 
                   />
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Sets the upper limit for 'Safe' status.</p>
@@ -233,16 +225,9 @@ export const DeviceSettings: React.FC = () => {
                     <span className="text-orange-500 font-mono font-bold text-lg">{formData.warningThreshold.toFixed(2)}m</span>
                   </div>
                   <input 
-                    type="range" min={Math.min(formData.normalThreshold + 0.1, formData.maxHeight - 0.1).toFixed(1)} max={formData.maxHeight} step="0.01" 
+                    type="range" min={Math.min(formData.normalThreshold + 0.1, formData.maxHeight - 0.1).toFixed(2)} max={formData.maxHeight} step="0.01" 
                     value={formData.warningThreshold} 
-                    onChange={e => {
-                      const val = parseFloat(e.target.value);
-                      setFormData(prev => ({
-                        ...prev,
-                        warningThreshold: val,
-                        dangerThreshold: Math.max(prev.dangerThreshold, Math.min(val + 0.1, prev.maxHeight))
-                      }));
-                    }} 
+                    onChange={e => setFormData(prev => ({ ...prev, warningThreshold: parseFloat(e.target.value) }))} 
                     className="w-full h-3 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-orange-500" 
                   />
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Triggers the 'Warning' automatic broadcast.</p>
@@ -254,7 +239,7 @@ export const DeviceSettings: React.FC = () => {
                     <span className="text-red-600 font-mono font-bold text-lg">{formData.dangerThreshold.toFixed(2)}m</span>
                   </div>
                   <input 
-                    type="range" min={Math.min(formData.warningThreshold + 0.1, formData.maxHeight).toFixed(1)} max={formData.maxHeight} step="0.01" 
+                    type="range" min={Math.min(formData.warningThreshold + 0.1, formData.maxHeight).toFixed(2)} max={formData.maxHeight} step="0.01" 
                     value={formData.dangerThreshold} 
                     onChange={e => setFormData(prev => ({ ...prev, dangerThreshold: parseFloat(e.target.value) }))} 
                     className="w-full h-3 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-red-600" 
