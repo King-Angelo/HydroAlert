@@ -45,7 +45,7 @@ export const DeviceSettings: React.FC = () => {
           normalThreshold: Number(data.normalThreshold),
           warningThreshold: Number(data.warningThreshold),
           dangerThreshold: Number(data.dangerThreshold),
-          maxHeight: Math.min(4, Math.max(1, Math.round(Number(data.maxHeight) || 4))),
+          maxHeight: Math.min(4, Math.max(0.01, Math.round((Number(data.maxHeight) || 4) * 100) / 100)),
           normalMessage: data.normalMessage || 'System Normal',
           warningMessage: data.warningMessage || 'Warning: Rising Water',
           dangerMessage: data.dangerMessage || 'Danger: Evacuate Now'
@@ -180,10 +180,10 @@ export const DeviceSettings: React.FC = () => {
                     <span className="text-slate-900 font-mono font-bold text-lg">{formData.maxHeight.toFixed(2)}m</span>
                   </div>
                   <input 
-                    type="range" min="1" max="4" step="1" 
+                    type="range" min="0.01" max="4" step="0.01" 
                     value={formData.maxHeight} 
                     onChange={e => {
-                      const val = parseFloat(e.target.value);
+                      const val = Math.round(parseFloat(e.target.value) * 100) / 100;
                       setFormData(prev => ({
                         ...prev,
                         maxHeight: val,
